@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:automated_package_integrator/constants/app_text.dart';
+import 'package:automated_package_integrator/features/select_project/service/api_key_injector.dart';
 import 'package:bloc/bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../../../core/enums.dart';
+import '../../../../core/enums.dart';
 import '../../service/package_editor.dart';
 
 part 'project_picker_event.dart';
@@ -11,11 +13,37 @@ part 'project_picker_state.dart';
 class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
   ProjectPickerBloc() : super(PickProjectState()) {
     on<SelectProjectDirectory>(_selectProjectDirectory);
+    on<ApiKeyEnteredEvent>(_apiKeyEntered);
+  }
+
+// Modify the _apiKeyEntered method
+  Future<void> _apiKeyEntered(
+    ApiKeyEnteredEvent event,
+    Emitter<ProjectPickerState> emit,
+  ) async {
+    if (state.path == null) {
+      emit(state.copyWith(
+        path: '',
+        status: ProjectValidationStatus.error,
+        message: "Path not found",
+        isError: true,
+      ));
+      return;
+    }
+    // Inject API key for both platforms
+    await ApiKeyInjector.injectAndroidKey(state.path!, event.apiKey);
+    await ApiKeyInjector.injectIosKey(state.path!, event.apiKey);
+    // Emit success state
+    emit(state.copyWith(
+      status: ProjectValidationStatus.apiKeySuccess,
+      message: SuccessText.apiKeySetSuccess,
+      isError: false,
+    ));
   }
 
   Future<void> _selectProjectDirectory(
     ProjectPickerEvent event,
-    Emitter<PickProjectState> emit,
+    Emitter<ProjectPickerState> emit,
   ) async {
     final result = await FilePicker.platform.getDirectoryPath();
     if (result != null) {
@@ -24,7 +52,7 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
         emit(state.copyWith(
           path: result,
           status: ProjectValidationStatus.invalid,
-          message: "This is not a valid Flutter project.",
+          message: ErrorText.notValid,
           isError: true,
         ));
         return;
@@ -51,13 +79,13 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
 
         if (exitCode != 0) {
           emit(state.copyWith(
-            message: "Package added and pub get succeeded.",
+            message: SuccessText.addPackagaeSuccess,
             isError: false,
             status: ProjectValidationStatus.success,
           ));
         } else {
           emit(state.copyWith(
-            message: "flutter pub get failed.",
+            message: ErrorText.pubGetFailed,
             isError: true,
             status: ProjectValidationStatus.error,
           ));

@@ -2,11 +2,11 @@ import 'package:automated_package_integrator/constants/app_colors.dart';
 import 'package:automated_package_integrator/constants/app_text.dart';
 import 'package:automated_package_integrator/constants/app_text_style.dart';
 import 'package:automated_package_integrator/core/custom_snackbar.dart';
-import 'package:automated_package_integrator/features/presentation/bloc/project_picker_bloc.dart';
+import 'package:automated_package_integrator/features/select_project/presentation/bloc/project_picker_bloc.dart';
+import 'package:automated_package_integrator/features/select_project/presentation/view/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../core/enums.dart';
+import 'package:automated_package_integrator/core/enums.dart';
 
 class ProjectPickerScreen extends StatefulWidget {
   const ProjectPickerScreen({super.key});
@@ -24,12 +24,12 @@ class _ProjectPickerScreenState extends State<ProjectPickerScreen> {
     super.dispose();
   }
 
-  Future<void> _showApiKeyDialog(BuildContext context) async {
-    final result = await showDialog<String>(
+  Future<void> _showApiKeyDialog(BuildContext context, String path) async {
+    await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backGroundColor,
-        title: const Text('Enter Google Maps API Key'),
+        title: const Text(AppText.enterKey),
         content: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(17),
@@ -57,18 +57,16 @@ class _ProjectPickerScreenState extends State<ProjectPickerScreen> {
             child: const Text(AppText.skip),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            onPressed: () => context.read<ProjectPickerBloc>().add(
+                  ApiKeyEnteredEvent(
+                    apiKey: controller.text.trim(),
+                  ),
+                ),
             child: const Text(AppText.submit),
           ),
         ],
       ),
     );
-
-    if (result != null && result.isNotEmpty) {
-      print('API Key entered: $result');
-    } else {
-      print('Skipped entering API Key');
-    }
   }
 
   @override
@@ -86,7 +84,14 @@ class _ProjectPickerScreenState extends State<ProjectPickerScreen> {
           }
 
           if (state.status == ProjectValidationStatus.valid) {
-            _showApiKeyDialog(context);
+            _showApiKeyDialog(context, state.path!);
+          }
+
+          // Add navigation to MapScreen when API key is successfully set
+          if (state.status == ProjectValidationStatus.apiKeySuccess) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MapScreen()),
+            );
           }
         },
         child: BlocBuilder<ProjectPickerBloc, PickProjectState>(
@@ -112,6 +117,7 @@ class _ProjectPickerScreenState extends State<ProjectPickerScreen> {
                         ProjectValidationStatus.error: Colors.orange,
                         ProjectValidationStatus.initial: Colors.grey,
                         ProjectValidationStatus.success: Colors.blue,
+                        ProjectValidationStatus.apiKeySuccess: Colors.purple,
                       }[state.status],
                     ),
                   ),

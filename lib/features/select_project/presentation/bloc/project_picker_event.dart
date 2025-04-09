@@ -5,4 +5,7 @@ sealed class ProjectPickerEvent {}
 
 class SelectProjectDirectory extends ProjectPickerEvent {}
 
-class ApiKeyEnteredEvent extends ProjectPickerEvent {}
+class ApiKeyEnteredEvent extends ProjectPickerEvent {
+  final String apiKey;
+  ApiKeyEnteredEvent({required this.apiKey});
+}
