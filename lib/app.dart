@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:automated_package_integrator/constants/app_theme.dart';
+import 'package:automated_package_integrator/features/select_project/presentation/view/map_screen.dart';
 import 'package:automated_package_integrator/features/select_project/presentation/view/project_picker_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -10,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const ProjectPickerScreen(),
+      home: Platform.isMacOS ? const ProjectPickerScreen() : const MapScreen(),
     );
   }
 }
