@@ -16,29 +16,80 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
     on<ApiKeyEnteredEvent>(_apiKeyEntered);
   }
 
-
   Future<void> _apiKeyEntered(
     ApiKeyEnteredEvent event,
-    Emitter<ProjectPickerState> emit,
+    Emitter<PickProjectState> emit,
   ) async {
-    if (state.path == null) {
+    // Validate inputs
+    if (event.apiKey.isEmpty) {
       emit(state.copyWith(
-        path: '',
         status: ProjectValidationStatus.error,
-        message: "Path not found",
+        message: ErrorText.emptyApiKey,
         isError: true,
       ));
       return;
     }
-    // Inject API key for both platforms
-    await ApiKeyInjector.injectAndroidKey(state.path!, event.apiKey);
-    await ApiKeyInjector.injectIosKey(state.path!, event.apiKey);
-    // Emit success state
-    emit(state.copyWith(
-      status: ProjectValidationStatus.apiKeySuccess,
-      message: SuccessText.apiKeySetSuccess,
-      isError: false,
-    ));
+
+    if (state.path == null || state.path!.isEmpty) {
+      emit(state.copyWith(
+        status: ProjectValidationStatus.error,
+        message: ErrorText.pathNotFound,
+        isError: true,
+      ));
+      return;
+    }
+
+    try {
+      // Platform-specific injection with individual error handling
+      bool androidSuccess = true, iosSuccess = true;
+
+      try {
+        await ApiKeyInjector.injectAndroidKey(state.path!, event.apiKey);
+      } catch (e) {
+        androidSuccess = false;
+        debugPrint('Android injection failed: $e');
+      }
+
+      try {
+        await ApiKeyInjector.injectIosKey(state.path!, event.apiKey);
+      } catch (e) {
+        iosSuccess = false;
+        debugPrint('iOS injection failed: $e');
+      }
+
+      // Handle partial/full failures
+      if (!androidSuccess && !iosSuccess) {
+        emit(state.copyWith(
+          status: ProjectValidationStatus.error,
+          message: ErrorText.apiKeyInjectionFailed,
+          isError: true,
+        ));
+      } else if (!androidSuccess) {
+        emit(state.copyWith(
+          status: ProjectValidationStatus.error,
+          message: ErrorText.androidInjectionFailed,
+          isError: true,
+        ));
+      } else if (!iosSuccess) {
+        emit(state.copyWith(
+          status: ProjectValidationStatus.error,
+          message: ErrorText.iosInjectionFailed,
+          isError: true,
+        ));
+      } else {
+        emit(state.copyWith(
+          status: ProjectValidationStatus.apiKeySuccess,
+          message: SuccessText.apiKeySetSuccess,
+          isError: false,
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        status: ProjectValidationStatus.error,
+        message: '${ErrorText.apiKeyInjectionFailed}: ${e.toString()}',
+        isError: true,
+      ));
+    }
   }
 
   Future<void> _selectProjectDirectory(
@@ -61,7 +112,7 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
       emit(state.copyWith(
         path: result,
         status: ProjectValidationStatus.valid,
-        message: "Project selected.",
+        message: SuccessText.projectSelected,
         isError: false,
       ));
 

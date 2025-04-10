@@ -46,5 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
+<key>GMSApiKey</key>
+<string>kuiikaa</string>
 </dict>
 </plist>
