@@ -12,8 +12,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _mapController;
 
-  final LatLng _initialPosition =
-      const LatLng(37.7749, -122.4194); // San Francisco
+final LatLng _initialPosition = const LatLng(28.6139, 77.2090); // New delhi
 
   @override
   Widget build(BuildContext context) {
