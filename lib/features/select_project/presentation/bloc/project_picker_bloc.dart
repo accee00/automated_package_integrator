@@ -16,7 +16,7 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, PickProjectState> {
     on<ApiKeyEnteredEvent>(_apiKeyEntered);
   }
 
-// Modify the _apiKeyEntered method
+
   Future<void> _apiKeyEntered(
     ApiKeyEnteredEvent event,
     Emitter<ProjectPickerState> emit,
